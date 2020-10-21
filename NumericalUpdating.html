@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Numerical Updating</title>
+		<script src="jspsych-6.1/jspsych.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-html-keyboard-response.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-html-button-response.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-instructions.js"></script>
+		<link href="jspsych-6.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+
+		<meta charset="UTF-8">
+	</head>
+	<body></body>
+	<script>
+
+		const trialNumberStyle = '"text-align:center;font-size:24px;position:fixed; left:80vw; top: 70vh;transform: translate(-50%, -50%)"';
+		const experimentEndStyle = '"text-align:center;font-size:24px;position:fixed; left:50vw; top: 50vh;transform: translate(-50%, -50%)"';
+
+		const STIMULUS_DURATION = 1600; //ms
+
+		const BOX_SPACING = 12; //percent width, 72% for six boxes
+
+		//Timeline:
+		//  Choose experimental file (or pull name from URL, ?sequence='xx')
+		//  Load experimental sequence
+		//  Iterate through trials in experimental sequence
+		//  Write diagnostic data to unique file
+
+		//Load the experimental file based on the URLSearchParams,
+		//Gate progress against finding a valid file name
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		const sequenceName = urlParams.get('sequence');
+		console.log(sequenceName);
+
+		//TODO: if sequence isn't set display instructions to add a sequence file query to the URL
+
+		const sequenceFilePath = sequenceName + ".json";
+		console.log(sequenceFilePath);
+
+		//This GET request will work locally only if you are running a local web
+		//server to handle the request, JS by default doesn't let you get local files
+		//as that could be a major security issue.
+		var sequenceFileRequest = new XMLHttpRequest();
+		sequenceFileRequest.open("GET", sequenceFilePath,false);
+		sequenceFileRequest.send();
+		const sequence = JSON.parse(sequenceFileRequest.responseText);
+
+		//Define a variable to hold trial responses, which makes parsing the results easier.
+		var trialResponse;
+
+		var experimentTimeline = [];
+
+		var instructionScreen = {
+			type: 'instructions',
+			pages: ['<br>You will see some boxes on screen.',
+				'<br>Numbers will appear one at a time in those boxes.',
+				'<br>Try to remember the most recent number shown in each box.',
+				'When "?" appears in a box,<br>type in the most recent number shown in that box.',
+				'<br>Click Next to begin.'
+				],
+			show_clickable_nav: true
+		}
+
+		experimentTimeline.push(instructionScreen)
+
+		var trialIndex = 0;
+		for (trialIndex = 0; trialIndex < sequence.length; trialIndex++)
+		{
+
+
+			//This assumes that all arrays in each trial sequence have the same length
+			var nBoxes = sequence[trialIndex][0].length;
+			var boxStyles = Array(nBoxes);
+
+			//Define the style for each box
+			for (var boxStyleIndex = 0; boxStyleIndex < nBoxes; boxStyleIndex++) {
+				BOX_SPACING
+				var thisBoxPosition =  BOX_SPACING * ((1-nBoxes)/2 + boxStyleIndex) + 50;
+				//var thisBoxPosition = boxStyleIndex / (nBoxes-1) * (MAX_HORIZONTAL_POSITION - MIN_HORIZONTAL_POSITION) + MIN_HORIZONTAL_POSITION;
+				boxStyles[boxStyleIndex] = '"border:2px solid black;width:50px;height:50px;padding:40px;' + 
+							'text-align:center;font-size:64px;position:fixed;left:'+ thisBoxPosition +'vw;' + 
+							'top: 40vh;transform:translate(-50%, -50%)"';
+			}
+
+			//wait screen to initiate a trial
+			var waitForClick = {
+				type: 'html-button-response',
+				stimulus: '<p style = ' + trialNumberStyle + '>' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+				choices:['Click to start the trial'],
+				on_start: function() {
+					trialResponse = "";
+				}
+			}
+			experimentTimeline.push(waitForClick);
+
+		  	//give a brief moment where the boxes are on screen before populating them
+			 var stimulus = '';
+			for(var boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
+				stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + ' ' + '</div>');
+			}
+			var preStimulusBoxDisplay = {
+				type: 'html-keyboard-response',
+				stimulus: stimulus,
+				choices: jsPsych.NO_KEYS,
+				trial_duration: STIMULUS_DURATION,
+				response_ends_trial: false
+			};
+			experimentTimeline.push(preStimulusBoxDisplay);
+
+			//Show each box in sequence
+			for(var digitIndex = 0; digitIndex < sequence[trialIndex].length; digitIndex++) {
+				var stimulus = '';
+				for(var boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
+					stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + sequence[trialIndex][digitIndex][boxIndex] + '</div>');
+				}
+				var showDigit = {
+					type: 'html-keyboard-response',
+					stimulus: stimulus,
+					choices: jsPsych.NO_KEYS,
+					trial_duration: STIMULUS_DURATION,
+					response_ends_trial: false
+
+				};
+				experimentTimeline.push(showDigit);
+			}
+
+			//get response
+			for(var responseIndex = 0; responseIndex < nBoxes; responseIndex++) {
+				var stimulus = '';
+				for(var boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
+					var boxText = ' ';
+					if(boxIndex == responseIndex) {
+						boxText = '?';
+					}
+					stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + boxText + '</div>');
+				}
+				var getResponse = {
+					type: 'html-keyboard-response',
+					stimulus: stimulus,
+					//The extra numbers at the end are for keypad entry
+					choices: ['1','2','3','4','5','6','7','8','9',97, 98, 99, 100, 101, 102, 103, 104, 105],
+					response_ends_trial: true,
+					on_finish: function(data){
+						//Subtract 96 for keypad responses,
+						//Subtract 48 for number row responses
+						var responseDigit;
+						if(data.key_press > 96) {
+							responseDigit = data.key_press - 96;
+						} else {
+							responseDigit = data.key_press - 48;
+						}
+						trialResponse = trialResponse.concat(responseDigit);
+						jsPsych.data.get().addToLast({trialResponse: trialResponse});
+					}
+				};
+				experimentTimeline.push(getResponse);
+			}
+		
+		}
+
+		jsPsych.init({
+			timeline: experimentTimeline,
+			preload: sequence,
+			on_finish: function() {
+				document.querySelector('body').innerHTML = '<p style = ' + experimentEndStyle + '>This block is finished.<br>You can close this window.</p>';
+			}
+		});
+
+	</script>
+</html>
