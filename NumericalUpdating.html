@@ -51,15 +51,33 @@
 
 		var experimentTimeline = [];
 
-		var instructionScreen = {
-			type: 'instructions',
-			pages: ['<br>You will see some boxes on screen.',
-				'<br>Numbers will appear one at a time in those boxes.',
-				'<br>Try to remember the most recent number shown in each box.',
-				'When "?" appears in a box,<br>type in the most recent number shown in that box.',
-				'<br>Click Next to begin.'
-				],
-			show_clickable_nav: true
+
+		const EMPTY_BOX_IMAGE = '<img src="EmptyBoxes.jpg" width=30% height = 30%>';
+		const EXAMPLE_IMAGE = '<img src="ExampleSequence.jpg" width=30% height = 30%>';
+		const PROMPT_IMAGE = '<img src="BoxesWithResponsePrompt.jpg" width=30% height = 30%>';
+
+
+		let instructionScreen;
+		if(sequenceName != "Demo"){
+			var currentURL = window.location.href.split("?")[0];
+			var demoURL = currentURL + "?sequence=Demo";
+			//Split off the optional 
+			instructionScreen = {
+				type: 'instructions',
+				pages: ['<h1><a href="' + demoURL + '" target="_">Click here for instructions and practice.</a></h1><br>Click next when you are ready to begin.'],
+				show_clickable_nav: true
+			}
+		} else {
+
+			instructionScreen = {
+				type: 'instructions',
+				pages: [EMPTY_BOX_IMAGE + '<br>You will see some boxes on screen.',
+					EXAMPLE_IMAGE+'<br>Numbers will appear one at a time in those boxes.<br>Try to remember the most recent number shown in each box.',
+					PROMPT_IMAGE+'<br>After you see the numbers, a "?" will appear in each box.<br>Type in the most recent number you saw in that box.',
+					'<br>Click Next to try a few practice trials.'
+					],
+				show_clickable_nav: true
+			}
 		}
 
 		experimentTimeline.push(instructionScreen)
@@ -159,9 +177,10 @@
 		
 		}
 
+
 		jsPsych.init({
 			timeline: experimentTimeline,
-			preload: sequence,
+			preload: ["EmptyBoxes.jpg","ExampleSequence.jpg","BoxesWithResponsePrompt.jpg"],
 			on_finish: function() {
 				document.querySelector('body').innerHTML = '<p style = ' + experimentEndStyle + '>This block is finished.<br>You can close this window.</p>';
 			}
