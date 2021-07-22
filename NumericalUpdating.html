@@ -6,6 +6,7 @@
 		<script src="jspsych-6.1/plugins/jspsych-html-keyboard-response.js"></script>
 		<script src="jspsych-6.1/plugins/jspsych-html-button-response.js"></script>
 		<script src="jspsych-6.1/plugins/jspsych-instructions.js"></script>
+		<script src="jspsych-6.1/plugins/jspsych-survey-text.js"></script>
 		<link href="jspsych-6.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
 
 		<meta charset="UTF-8">
@@ -51,17 +52,24 @@
 
 		var experimentTimeline = [];
 
-
 		const EMPTY_BOX_IMAGE = '<img src="EmptyBoxes.jpg" width=30% height = 30%>';
-		const EXAMPLE_IMAGE = '<img src="ExampleSequence.jpg" width=30% height = 30%>';
+		const EXAMPLE_VIDEO = '<video  width=27% height = 27% controls muted><source src="ExampleSequence.webm" type="video/webm"></video>';
 		const PROMPT_IMAGE = '<img src="BoxesWithResponsePrompt.jpg" width=30% height = 30%>';
 
 
 		let instructionScreen;
 		if(sequenceName != "Demo"){
+			
+			var enterSubjectID = {
+				type: 'survey-text',
+				questions:[{prompt: "Please enter your participant ID", name: 'SubjectID'}],
+				button_label: 'Log in'
+			}
+
+			experimentTimeline.push(enterSubjectID);
+
 			var currentURL = window.location.href.split("?")[0];
 			var demoURL = currentURL + "?sequence=Demo";
-			//Split off the optional 
 			instructionScreen = {
 				type: 'instructions',
 				pages: ['<h1><a href="' + demoURL + '" target="_blank">Click here for instructions and practice.</a></h1><br>Click next when you are ready to begin.'],
@@ -71,16 +79,17 @@
 
 			instructionScreen = {
 				type: 'instructions',
-				pages: [EMPTY_BOX_IMAGE + '<br>You will see some boxes on screen.',
-					EXAMPLE_IMAGE+'<br>Numbers will appear one at a time in those boxes.<br>Try to remember the most recent number shown in each box.',
-					PROMPT_IMAGE+'<br>After you see the numbers, a "?" will appear in each box.<br>Type in the most recent number you saw in that box.',
-					'<br>Click Next to try a few practice trials.'
+				pages: [EMPTY_BOX_IMAGE + '<br><br><br><br><br><br><br><br><br>You will see some boxes on screen.',
+					EXAMPLE_VIDEO+'<br>Numbers will appear one at a time in those boxes.<br>Try to remember the <i>most recent</i> number shown in each box.<br>'+
+					'Play the video above to see an example. The correct answer is <b>9,1,2</b>.',
+					PROMPT_IMAGE+'<br><br><br><br><br><br><br><br>After you see the numbers, a "?" will appear in each box.<br>Type in the <i>most recent</i> number you saw in that box.',
+					'<br><br><br><br><br><br><br><br><br><br><br><br>Click Next to try a few practice trials.'
 					],
 				show_clickable_nav: true
 			}
 		}
 
-		experimentTimeline.push(instructionScreen)
+		experimentTimeline.push(instructionScreen);
 
 		var trialIndex = 0;
 		for (trialIndex = 0; trialIndex < sequence.length; trialIndex++)
@@ -180,7 +189,7 @@
 
 		jsPsych.init({
 			timeline: experimentTimeline,
-			preload: ["EmptyBoxes.jpg","ExampleSequence.jpg","BoxesWithResponsePrompt.jpg"],
+			preload: ["EmptyBoxes.jpg","ExampleSequence.webm","BoxesWithResponsePrompt.jpg"],
 			on_finish: function() {
 				document.querySelector('body').innerHTML = '<p style = ' + experimentEndStyle + '>This block is finished.<br>You can close this window.</p>';
 			}
