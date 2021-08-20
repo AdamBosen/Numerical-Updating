@@ -8,15 +8,12 @@
 		<script src="jspsych-6.1/plugins/jspsych-instructions.js"></script>
 		<script src="jspsych-6.1/plugins/jspsych-survey-text.js"></script>
 		<link href="jspsych-6.1/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+		<link href="/css/Updating.css" rel="stylesheet" type="text/css"></link>
 
 		<meta charset="UTF-8">
 	</head>
 	<body></body>
-	<script>
-
-		const trialNumberStyle = '"text-align:center;font-size:24px;position:fixed; left:80vw; top: 70vh;transform: translate(-50%, -50%)"';
-		const experimentEndStyle = '"text-align:center;font-size:24px;position:fixed; left:50vw; top: 50vh;transform: translate(-50%, -50%)"';
-
+	<script> 
 		const STIMULUS_DURATION = 1600; //ms
 
 		const BOX_SPACING = 12; //percent width, 72% for six boxes
@@ -72,7 +69,7 @@
 			var demoURL = currentURL + "?sequence=Demo";
 			instructionScreen = {
 				type: 'instructions',
-				pages: ['<h1><a href="' + demoURL + '" target="_blank">Click here for instructions and practice.</a></h1><br>Click next when you are ready to begin.'],
+				pages: ['<h2>1. <a href="' + demoURL + '" target="_blank">Click here for instructions and practice.</a><br>2. Click next when you are ready to begin.</h1>'],
 				show_clickable_nav: true
 			}
 		} else {
@@ -105,15 +102,13 @@
 				BOX_SPACING
 				var thisBoxPosition =  BOX_SPACING * ((1-nBoxes)/2 + boxStyleIndex) + 50;
 				//var thisBoxPosition = boxStyleIndex / (nBoxes-1) * (MAX_HORIZONTAL_POSITION - MIN_HORIZONTAL_POSITION) + MIN_HORIZONTAL_POSITION;
-				boxStyles[boxStyleIndex] = '"border:2px solid black;width:50px;height:50px;padding:40px;' + 
-							'text-align:center;font-size:64px;position:fixed;left:'+ thisBoxPosition +'vw;' + 
-							'top: 40vh;transform:translate(-50%, -50%)"';
+				boxStyles[boxStyleIndex] = 'left:'+ thisBoxPosition +'vw;';
 			}
 
 			//wait screen to initiate a trial
 			var waitForClick = {
 				type: 'html-button-response',
-				stimulus: '<p style = ' + trialNumberStyle + '>' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+				stimulus: '<p class="trialNumber">' + (trialIndex + 1) + " of " + sequence.length + "</p>",
 				choices:['Click to start the trial'],
 				on_start: function() {
 					trialResponse = "";
@@ -124,7 +119,7 @@
 		  	//give a brief moment where the boxes are on screen before populating them
 			 var stimulus = '';
 			for(var boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
-				stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + ' ' + '</div>');
+				stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + ' ' + '</div>');
 			}
 			var preStimulusBoxDisplay = {
 				type: 'html-keyboard-response',
@@ -139,7 +134,7 @@
 			for(var digitIndex = 0; digitIndex < sequence[trialIndex].length; digitIndex++) {
 				var stimulus = '';
 				for(var boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
-					stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + sequence[trialIndex][digitIndex][boxIndex] + '</div>');
+					stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + sequence[trialIndex][digitIndex][boxIndex] + '</div>');
 				}
 				var showDigit = {
 					type: 'html-keyboard-response',
@@ -160,7 +155,7 @@
 					if(boxIndex == responseIndex) {
 						boxText = '?';
 					}
-					stimulus = stimulus.concat('<div style = ' + boxStyles[boxIndex] + '>' + boxText + '</div>');
+					stimulus = stimulus.concat('<div class ="box" style = ' + boxStyles[boxIndex] + '>' + boxText + '</div>');
 				}
 				var getResponse = {
 					type: 'html-keyboard-response',
@@ -191,7 +186,7 @@
 			timeline: experimentTimeline,
 			preload: ["EmptyBoxes.jpg","ExampleSequence.webm","BoxesWithResponsePrompt.jpg"],
 			on_finish: function() {
-				document.querySelector('body').innerHTML = '<p style = ' + experimentEndStyle + '>This block is finished.<br>You can close this window.</p>';
+				document.querySelector('body').innerHTML = '<p class="experimentEnd">This block is finished.<br>You can close this window.</p>';
 			}
 		});
 
