@@ -2,6 +2,7 @@
 <html>
 	<head>
 		<title>Numerical Updating</title>
+		<script src="jatos.js"></script>
 		<script src="jspsych-7.2.1-dist/jspsych.js"></script>
 		<script src="jspsych-7.2.1-dist/plugin-preload.js"></script>
 		<script src="jspsych-7.2.1-dist/plugin-html-keyboard-response.js"></script>
@@ -9,7 +10,7 @@
 		<script src="jspsych-7.2.1-dist/plugin-instructions.js"></script>
 		<script src="jspsych-7.2.1-dist/plugin-survey-text.js"></script>
 		<link href="jspsych-7.2.1-dist/jspsych.css" rel="stylesheet" type="text/css"></link>
-		<link href="/css/Updating.css" rel="stylesheet" type="text/css"></link>
+		<link href="css/Updating.css" rel="stylesheet" type="text/css"></link>
 
 		<meta charset="UTF-8">
 	</head>
@@ -22,171 +23,160 @@
 
 		let jsPsych = initJsPsych({
 			on_finish: function() {
-					document.querySelector('body').innerHTML = '<p class="experimentEnd">This block is finished.<br>You can close this window.</p>';
+					if(jatos.componentJsonInput.sequence == "Demo") {
+					//We just finished the demo, so load block 1
+					jatos.startComponentByPos(3);
+				} else {
+					jatos.endStudy(jsPsych.data.get().json());
+				}
 			}
 		});
-		
-		//Timeline:
-		//  Choose experimental file (or pull name from URL, ?sequence='xx')
-		//  Load experimental sequence
-		//  Iterate through trials in experimental sequence
-		//  Write diagnostic data to unique file
-
-		//Load the experimental file based on the URLSearchParams,
-		//Gate progress against finding a valid file name
-		const queryString = window.location.search;
-		const urlParams = new URLSearchParams(queryString);
-		const sequenceName = urlParams.get('sequence');
-		console.log(sequenceName);
-
-		const sequenceFilePath = sequenceName + ".json";
-		console.log(sequenceFilePath);
-
-		//This GET request will work locally only if you are running a local web
-		//server to handle the request, JS by default doesn't let you get local files
-		//as that could be a major security issue.
-		let sequenceFileRequest = new XMLHttpRequest();
-		sequenceFileRequest.open("GET", sequenceFilePath,false);
-		sequenceFileRequest.send();
-		const sequence = JSON.parse(sequenceFileRequest.responseText);
 
 		//Define a variable to hold trial responses, which makes parsing the results easier.
 		let trialResponse;
 
-		let timeline = [];
+		jatos.onload(() => {
+			const sequenceName = jatos.componentJsonInput.sequence;
 
-		const EMPTY_BOX_IMAGE = '<img src="EmptyBoxes.jpg" width=30% height = 30%>';
-		const EXAMPLE_VIDEO = '<video  width=27% height = 27% controls muted><source src="ExampleSequence.webm" type="video/webm"></video>';
-		const PROMPT_IMAGE = '<img src="BoxesWithResponsePrompt.jpg" width=30% height = 30%>';
+			const sequenceFilePath = sequenceName + ".json";
+			console.log(sequenceFilePath);
 
-		let preload = {
-			type: jsPsychPreload,
-			images: ['EmptyBoxes.jpg','BoxesWithResponsePrompt.jpg'],
-			video: ['ExampleSequence.webm']
-			
-		}
-		timeline.push(preload);
+			//This GET request will work locally only if you are running a local web
+			//server to handle the request, JS by default doesn't let you get local files
+			//as that could be a major security issue.
+			let sequenceFileRequest = new XMLHttpRequest();
+			sequenceFileRequest.open("GET", sequenceFilePath,false);
+			sequenceFileRequest.send();
+			const sequence = JSON.parse(sequenceFileRequest.responseText);
 
-		let instructionScreen;
-		if(sequenceName != "Demo"){
-			
-			let enterSubjectID = {
-				type: jsPsychSurveyText,
-				questions:[{prompt: "Please enter your participant ID", name: 'SubjectID'}],
-				button_label: 'Log in'
+			let timeline = [];
+
+			const EMPTY_BOX_IMAGE = '<img src="EmptyBoxes.jpg" width=30% height = 30%>';
+			const EXAMPLE_VIDEO = '<video  width=27% height = 27% controls muted><source src="ExampleSequence.webm" type="video/webm"></video>';
+			const PROMPT_IMAGE = '<img src="BoxesWithResponsePrompt.jpg" width=30% height = 30%>';
+
+			let preload = {
+				type: jsPsychPreload,
+				images: ['EmptyBoxes.jpg','BoxesWithResponsePrompt.jpg'],
+				video: ['ExampleSequence.webm']
+				
 			}
+			timeline.push(preload);
 
-			timeline.push(enterSubjectID);
+			let instructionScreen;
+			if(sequenceName != "Demo"){ 
+				instructionScreen = {
+					type: jsPsychInstructions,
+					pages: ['<br><br>Great work! If you have any questions please let us know.',
+						'<br><br>We are now going to complete ' + sequence.length  + ' trials.',
+						'<br><br>Click Next to begin.'],
+					show_clickable_nav: true
+				}
+			} else {
 
-			let currentURL = window.location.href.split("?")[0];
-			let demoURL = currentURL + "?sequence=Demo";
-			instructionScreen = {
-				type: jsPsychInstructions,
-				pages: ['<h2>1. <a href="' + demoURL + '" target="_blank">Click here for instructions and practice.</a><br>2. Click next when you are ready to begin.</h1>'],
-				show_clickable_nav: true
-			}
-		} else {
-
-			instructionScreen = {
-				type: jsPsychInstructions,
-				pages: [EMPTY_BOX_IMAGE + '<br><br><br><br><br><br><br><br><br>You will see some boxes on screen.',
-					EXAMPLE_VIDEO+'<br>Numbers will appear one at a time in those boxes.<br>Try to remember the <i>most recent</i> number shown in each box.<br>'+
-					'Play the video above to see an example. The correct answer is <b>9,1,2</b>.',
-					PROMPT_IMAGE+'<br><br><br><br><br><br><br><br>After you see the numbers, a "?" will appear in each box.<br>Type in the <i>most recent</i> number you saw in that box.',
-					'<br><br><br><br><br><br><br><br><br><br><br><br>Click Next to try a few practice trials.'
-					],
-				show_clickable_nav: true
-			}
-		}
-
-		timeline.push(instructionScreen);
-
-		let trialIndex = 0;
-		for (trialIndex = 0; trialIndex < sequence.length; trialIndex++)
-		{
-
-
-			//This assumes that all arrays in each trial sequence have the same length
-			let nBoxes = sequence[trialIndex][0].length;
-			let boxStyles = Array(nBoxes);
-
-			//Define the style for each box
-			for (let boxStyleIndex = 0; boxStyleIndex < nBoxes; boxStyleIndex++) {
-				BOX_SPACING
-				let thisBoxPosition =  BOX_SPACING * ((1-nBoxes)/2 + boxStyleIndex) + 50;
-				//let thisBoxPosition = boxStyleIndex / (nBoxes-1) * (MAX_HORIZONTAL_POSITION - MIN_HORIZONTAL_POSITION) + MIN_HORIZONTAL_POSITION;
-				boxStyles[boxStyleIndex] = 'left:'+ thisBoxPosition +'vw;';
-			}
-
-			//wait screen to initiate a trial
-			let waitForClick = {
-				type: jsPsychHtmlButtonResponse,
-				stimulus: '<p class="trialNumber">' + (trialIndex + 1) + " of " + sequence.length + "</p>",
-				choices:['Click to start the trial'],
-				on_start: function() {
-					trialResponse = "";
+				instructionScreen = {
+					type: jsPsychInstructions,
+					pages: [EMPTY_BOX_IMAGE + '<br><br><br><br><br><br><br><br><br>You will see some boxes on screen.',
+						EXAMPLE_VIDEO+'<br>Numbers will appear one at a time in those boxes.<br>Try to remember the <i>most recent</i> number shown in each box.<br>'+
+						'Play the video above to see an example. The correct answer is <b>9,1,2</b>.',
+						PROMPT_IMAGE+'<br><br><br><br><br><br><br><br>After you see the numbers, a "?" will appear in each box.<br>Type in the <i>most recent</i> number you saw in that box.',
+						'<br><br><br><br><br><br><br><br><br><br><br><br>Click Next to try a few practice trials.'
+						],
+					show_clickable_nav: true
 				}
 			}
-			timeline.push(waitForClick);
 
-		  	//give a brief moment where the boxes are on screen before populating them
-			 let stimulus = '';
-			for(let boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
-				stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + ' ' + '</div>');
-			}
-			let preStimulusBoxDisplay = {
-				type: jsPsychHtmlKeyboardResponse,
-				stimulus: stimulus,
-				choices: "NO_KEYS",
-				trial_duration: STIMULUS_DURATION,
-				response_ends_trial: false
-			};
-			timeline.push(preStimulusBoxDisplay);
+			timeline.push(instructionScreen);
 
-			//Show each box in sequence
-			for(let digitIndex = 0; digitIndex < sequence[trialIndex].length; digitIndex++) {
-				let stimulus = '';
+			let trialIndex = 0;
+			for (trialIndex = 0; trialIndex < sequence.length; trialIndex++)
+			{
+
+
+				//This assumes that all arrays in each trial sequence have the same length
+				let nBoxes = sequence[trialIndex][0].length;
+				let boxStyles = Array(nBoxes);
+
+				//Define the style for each box
+				for (let boxStyleIndex = 0; boxStyleIndex < nBoxes; boxStyleIndex++) {
+					BOX_SPACING
+					let thisBoxPosition =  BOX_SPACING * ((1-nBoxes)/2 + boxStyleIndex) + 50;
+					//let thisBoxPosition = boxStyleIndex / (nBoxes-1) * (MAX_HORIZONTAL_POSITION - MIN_HORIZONTAL_POSITION) + MIN_HORIZONTAL_POSITION;
+					boxStyles[boxStyleIndex] = 'left:'+ thisBoxPosition +'vw;';
+				}
+
+				//wait screen to initiate a trial
+				let waitForClick = {
+					type: jsPsychHtmlButtonResponse,
+					stimulus: '<p class="trialNumber">' + (trialIndex + 1) + " of " + sequence.length + "</p>",
+					choices:['Click to start the trial'],
+					on_start: function() {
+						trialResponse = "";
+					}
+				}
+				timeline.push(waitForClick);
+
+				//give a brief moment where the boxes are on screen before populating them
+				 let stimulus = '';
 				for(let boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
-					stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + sequence[trialIndex][digitIndex][boxIndex] + '</div>');
+					stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + ' ' + '</div>');
 				}
-				let showDigit = {
+				let preStimulusBoxDisplay = {
 					type: jsPsychHtmlKeyboardResponse,
 					stimulus: stimulus,
 					choices: "NO_KEYS",
 					trial_duration: STIMULUS_DURATION,
 					response_ends_trial: false
-
 				};
-				timeline.push(showDigit);
-			}
+				timeline.push(preStimulusBoxDisplay);
 
-			//get response
-			for(let responseIndex = 0; responseIndex < nBoxes; responseIndex++) {
-				let stimulus = '';
-				for(let boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
-					let boxText = ' ';
-					if(boxIndex == responseIndex) {
-						boxText = '?';
+				//Show each box in sequence
+				for(let digitIndex = 0; digitIndex < sequence[trialIndex].length; digitIndex++) {
+					let stimulus = '';
+					for(let boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
+						stimulus = stimulus.concat('<div class="box" style = ' + boxStyles[boxIndex] + '>' + sequence[trialIndex][digitIndex][boxIndex] + '</div>');
 					}
-					stimulus = stimulus.concat('<div class ="box" style = ' + boxStyles[boxIndex] + '>' + boxText + '</div>');
+					let showDigit = {
+						type: jsPsychHtmlKeyboardResponse,
+						stimulus: stimulus,
+						choices: "NO_KEYS",
+						trial_duration: STIMULUS_DURATION,
+						response_ends_trial: false
+
+					};
+					timeline.push(showDigit);
 				}
-				let getResponse = {
-					type: jsPsychHtmlKeyboardResponse,
-					stimulus: stimulus,
-					//The extra numbers at the end are for keypad entry
-					choices: ['1','2','3','4','5','6','7','8','9'],
-					response_ends_trial: true,
-					on_finish: function(data){
-						trialResponse = trialResponse.concat(data.response);
-						jsPsych.data.get().addToLast({trialResponse: trialResponse});
-					}
-				};
-				timeline.push(getResponse);
-			}
-		
-		}
 
-		jsPsych.run(timeline);
+				//get response
+				for(let responseIndex = 0; responseIndex < nBoxes; responseIndex++) {
+					let stimulus = '';
+					for(let boxIndex = 0; boxIndex < nBoxes; boxIndex++) {
+						let boxText = ' ';
+						if(boxIndex == responseIndex) {
+							boxText = '?';
+						}
+						stimulus = stimulus.concat('<div class ="box" style = ' + boxStyles[boxIndex] + '>' + boxText + '</div>');
+					}
+					let getResponse = {
+						type: jsPsychHtmlKeyboardResponse,
+						stimulus: stimulus,
+						//The extra numbers at the end are for keypad entry
+						choices: ['1','2','3','4','5','6','7','8','9'],
+						response_ends_trial: true,
+						on_finish: function(data){
+							trialResponse = trialResponse.concat(data.response);
+							jsPsych.data.get().addToLast({trialResponse: trialResponse,
+									subjectID:jatos.studySessionData.SubjectID});
+							jatos.appendResultData(jsPsych.data.get().last().trials);
+						}
+					};
+					timeline.push(getResponse);
+				}
+			
+			}
+
+			jsPsych.run(timeline);
+		});
 
 	</script>
 </html>

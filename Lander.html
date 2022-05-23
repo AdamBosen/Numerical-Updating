@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+
+<head>
+	<script src="jatos.js"></script>
+	<script src="jspsych-7.2.1-dist/jspsych.js"></script>
+	<script src="jspsych-7.2.1-dist/plugin-survey-text.js"></script>
+	<link href="jspsych-7.2.1-dist/jspsych.css" rel="stylesheet" type="text/css"></link>
+	<link href="css/Updating.css" rel="stylesheet" type="text/css"></link>
+</head>
+
+<body></body>
+
+<script>
+
+	var timeline = [];
+	
+	var jsPsych = initJsPsych({
+		on_finish: function() {
+			jatos.submitResultData(jsPsych.data.get());
+			jatos.studySessionData.SubjectID = jsPsych.data.get().last().trials[0].response.SubjectID;
+
+			//Component 2 is the demo
+			jatos.startComponentByPos(2);
+		}
+	});
+
+	var enterSubjectID = {
+		type: jsPsychSurveyText,
+		questions:[{prompt: "Please enter your participant ID", name: 'SubjectID'}],
+		button_label: 'Log in'
+	}
+
+	timeline.push(enterSubjectID);
+
+	jatos.onLoad(() => {
+		jsPsych.run(timeline);
+	});
+
+</script>
+
+</html>
+
