@@ -1,5 +1,5 @@
 # Numerical-Updating
-Website built in javascript using the jsPsych library to test memory in a numerical updating task. A running example of the most recent version of this script can be found here: https://g3ihsqn6sb.cognition.run/?sequence=Demo
+Website built in javascript using the jsPsych library to test memory in a numerical updating task. A running example of the most recent version of this script can be found here: https://jatos.boystown.org/publix/K5Ll9mPANNw
 
 This script was developed in jsPsych 6.1, which can be downloaded here: https://github.com/jspsych/jsPsych/releases/tag/v6.1.0 . It probably works with newer versions of jsPsych, but I haven't tested it.
 
